@@ -154,7 +154,7 @@ class World(object):
 
         option_y = 'up' if min_y_mov < 0 else 'down'
         option_x = 'left' if min_x_mov < 0 else 'right'
-        option = option_x if abs(min_x_mov) > abs(min_y_mov) else option_x
+        option = option_x if abs(min_x_mov) > abs(min_y_mov) else option_y
 
         return min_candidate, option
 
