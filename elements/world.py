@@ -1,4 +1,5 @@
 import math
+from collections import OrderedDict
 from random import Random
 
 from elements.backstory import BackStory
@@ -71,6 +72,15 @@ class World(object):
 
     def get_events(self, show_labels):
         return self.backstory.get_events_as_text(show_labels)
+
+    def get_characters_events(self, show_label):
+        lines = []
+        for character in self.characters:
+            lines.append(character.name)
+            events_as_text = character.backstory.get_events_as_text(show_label)
+            lines.append(events_as_text)
+        return '\n\n'.join(lines)
+
 
     def move_character(self, character, direction=None):
         move_map = {'up': self._move_up, 'down': self._move_down, 'left': self._move_left, 'right': self._move_right}

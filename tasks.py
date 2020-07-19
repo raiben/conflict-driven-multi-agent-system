@@ -7,7 +7,7 @@ from elements.world import World
 
 
 @task
-def world(context, seed=None, grid_size=20, characters=200, iterations=10, show_labels=False):
+def world(context, seed=None, grid_size=2, characters=5, iterations=10, show_labels=False):
     seed = int(time.time() * 1000000) if seed is None else seed
     random = Random(seed)
     print(f'Seed: {seed}')
@@ -15,4 +15,5 @@ def world(context, seed=None, grid_size=20, characters=200, iterations=10, show_
     world = World(random, grid_size, characters, iterations)
     world.build()
     world.run()
-    print(world.get_events(show_labels))
+    print(world.get_events(show_labels) + '\n')
+    print(world.get_characters_events(show_labels))
