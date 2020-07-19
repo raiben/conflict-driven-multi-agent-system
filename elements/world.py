@@ -1,4 +1,3 @@
-import json
 import math
 from random import Random
 
@@ -58,7 +57,7 @@ class World(object):
         for y in range(0, self.grid_size):
             for x in range(0, self.grid_size):
                 if character in self.positions[x][y]:
-                    return f'{x}:{y}'
+                    return f'{x}, {y}'
 
         return 'Unknown'
 
@@ -70,14 +69,8 @@ class World(object):
 
         return set()
 
-    def get_events(self):
-        content = []
-        for event in self.backstory:
-            content.append(f'  {json.dumps(event)}')
-        content_as_text = ',\n'.join(content)
-
-        lines = ['[', content_as_text, ']']
-        return '\n'.join(lines)
+    def get_events(self, show_labels):
+        return self.backstory.get_events_as_text(show_labels)
 
     def move_character(self, character, direction=None):
         move_map = {'up': self._move_up, 'down': self._move_down, 'left': self._move_left, 'right': self._move_right}

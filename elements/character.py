@@ -2,7 +2,7 @@ from typing import List
 
 from elements.backstory import BackStory
 from elements.conflict import Conflict
-from elements.event import Event
+from elements.event import Event, EventType
 
 
 class Character(object):
@@ -27,7 +27,7 @@ class Character(object):
         return value <= probability
 
     def _no_operation(self, t, event_id, *args, **kwargs):
-        event = Event(t, event_id, False, 'noop', [self.name], [], [], [], [])
+        event = Event(t, event_id, False, EventType.NOOP.value, [self.name], [], [], [], [])
         self.backstory.add_event(event)
         self.world.add_world_event(event)
 
@@ -36,7 +36,7 @@ class Character(object):
         self.world.move_character(self)
         new_position = self.world.get_position(self)
 
-        event = Event(t, event_id, False, 'move', [self.name], [], [], [], [old_position, new_position])
+        event = Event(t, event_id, False, EventType.MOVE.value, [self.name], [], [], [], [old_position, new_position])
         self.backstory.add_event(event)
         self.world.add_world_event(event)
 
@@ -53,7 +53,8 @@ class Character(object):
         # TODO What if the conflict is not resolved this time? What kind of tropes would it enable?
         self.open_conflicts.remove(conflict)
 
-        event = Event(t, event_id, conflict.is_story_arc, 'resolve', [self.name], [conflict.antagonist.name],
+        event = Event(t, event_id, conflict.is_story_arc, EventType.RESOLVE.value, [self.name],
+                      [conflict.antagonist.name],
                       [], [], [])
         conflict.antagonist.add_event(event)
         self.backstory.add_event(event)
@@ -68,7 +69,7 @@ class Character(object):
 
         conflict_to_resolve = next(conflict for conflict in self.open_conflicts
                                    if conflict.antagonist == closer_antagonist)
-        event = Event(t, event_id, conflict_to_resolve.is_story_arc, 'chase_resolution', [self.name],
+        event = Event(t, event_id, conflict_to_resolve.is_story_arc, EventType.CHASE_RESOLUTION.value, [self.name],
                       [closer_antagonist.name], [], [], [old_position, new_position])
         closer_antagonist.add_event(event)
         self.backstory.add_event(event)
@@ -93,7 +94,7 @@ class Character(object):
         conflict = Conflict(antagonist, is_story_arc)
         self.open_conflicts.append(conflict)
 
-        event = Event(t, event_id, is_story_arc, 'confront', [self.name], [antagonist.name], [], [], [])
+        event = Event(t, event_id, is_story_arc, EventType.CONFRONT.value, [self.name], [antagonist.name], [], [], [])
         antagonist.add_event(event)
         self.backstory.add_event(event)
         self.world.add_world_event(event)
