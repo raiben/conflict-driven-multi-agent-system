@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from scraper.trope_node import TropeNode
 
 
@@ -54,3 +56,15 @@ class TropeTree(object):
     def as_ete3_string(self):
         text = self._read_post_order_as_ete3_string(self._root)
         return f'{text};'
+
+    def as_dictionary(self, node=None):
+        if node is None:
+            node = self._root
+
+        if not node.children:
+            return {'name': node.name}
+
+        children = list()
+        for child in node.children:
+            children.append(self.as_dictionary(child))
+        return OrderedDict([('name',node.name),('children',children)])

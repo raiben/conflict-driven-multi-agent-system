@@ -1,3 +1,4 @@
+from sys import stderr
 from time import sleep
 
 from pip._vendor import requests
@@ -22,10 +23,13 @@ class SubTropesScraper(object):
         document = fromstring(content)
         links = document.cssselect('#main-article a')
         for link in links:
-            reference = link.attrib['href']
-            if self.TROPE_DETECTOR in reference:
-                trope = reference.split(self.TROPE_DETECTOR)[1]
-                related_list.append(trope)
+            try:
+                reference = link.attrib['href']
+                if self.TROPE_DETECTOR in reference:
+                    trope = reference.split(self.TROPE_DETECTOR)[1]
+                    related_list.append(trope)
+            except KeyError:
+                print(f'Link {link} with no href. Skipping', file=stderr)
 
         return related_list
 

@@ -1,5 +1,7 @@
+import json
 import math
 from collections import OrderedDict
+from datetime import datetime
 from random import Random
 
 from elements.backstory import BackStory
@@ -16,6 +18,7 @@ class World(object):
         self.positions = None
         self.characters = None
         self.backstory = None
+        self.run_at = None
 
     def build(self):
         self.backstory = BackStory()
@@ -39,6 +42,7 @@ class World(object):
             random_position.add(character)
 
     def run(self):
+        self.run_at = datetime.now()
         t = 0
         event_id = 0
 
@@ -71,16 +75,7 @@ class World(object):
         return set()
 
     def get_events(self, show_labels):
-        return self.backstory.get_events_as_text(show_labels)
-
-    def get_characters_events(self, show_label):
-        lines = []
-        for character in self.characters:
-            lines.append(character.name)
-            events_as_text = character.backstory.get_events_as_text(show_label)
-            lines.append(events_as_text)
-        return '\n\n'.join(lines)
-
+        return self.backstory.get_events_as_dictionary(show_labels)
 
     def move_character(self, character, direction=None):
         move_map = {'up': self._move_up, 'down': self._move_down, 'left': self._move_left, 'right': self._move_right}
@@ -163,3 +158,22 @@ class World(object):
 
     def calculate_distance(self, x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    def store_events_as_json(self, seed, show_labels=False, output_file=None):
+        world_dictionary = OrderedDict()
+        world_dictionary['META'] = OrderedDict([
+            ('SEED', seed), ('GRID_SIZE', self.grid_size), ('CHARACTER_SIZE', self.character_size),
+            ('ITERATIONS', self.iterations), ('RUN_AT', self.run_at.isoformat())])
+        world_dictionary['CHARACTERS'] = [character.name for character in self.characters]
+        world_dictionary['CHARACTERS'] = [character.name for character in self.characters]
+        world_dictionary['EVENTS'] = OrderedDict()
+        world_dictionary['EVENTS']['GLOBAL'] = self.backstory.get_events_as_dictionary(show_labels)
+        for character in self.characters:
+            world_dictionary['EVENTS'][character.name] = character.backstory.get_events_as_dictionary(show_labels)
+        content = json.dumps(world_dictionary, indent=2)
+
+        if output_file:
+            with open(output_file, 'w') as handler:
+                handler.write(content)
+        else:
+            print(content)

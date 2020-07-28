@@ -1,1 +1,1 @@
-# conflict-drive-multi-agent-system
+# conflict-driven-multi-agent-system

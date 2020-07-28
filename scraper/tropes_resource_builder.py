@@ -1,3 +1,7 @@
+import json
+from collections import OrderedDict
+from sys import stderr
+
 from ete3 import Tree, TreeStyle, AttrFace
 from ete3.treeview import faces
 
@@ -6,41 +10,72 @@ from scraper.trope_tree import TropeTree
 
 
 class TropesResourceBuilder(object):
+
     def __init__(self, recursion_level=2):
         self.recursion_level = recursion_level
         self.move_trope_tree = None
+        self.confront_trope_tree = None
+        self.chase_resolution_tree = None
+        self.resolve_ending_tree = None
+        self.resolve_fight_tree = None
+        self.character_tree = None
+        self.trees = OrderedDict()
 
-    def build_resource(self):
-        queue = ['LocomotionSuperindex']
-        self.move_trope_tree = TropeTree(root_name='LocomotionSuperindex')
+    def retrieve_resource(self):
+        self.move_trope_tree = self._retrieve_and_build_trope_tree('LocomotionSuperindex')
+        self.confront_trope_tree = self._retrieve_and_build_trope_tree('Conflict')
+        self.chase_resolution_tree = self._retrieve_and_build_trope_tree('ChaseScene')
+        self.resolve_ending_tree = self._retrieve_and_build_trope_tree('EndingTropes')
+        self.resolve_fight_tree = self._retrieve_and_build_trope_tree('FightScene')
+        self.character_tree = self._retrieve_and_build_trope_tree('Characters')
 
+    def _retrieve_and_build_trope_tree(self, root_trope):
+        queue = [root_trope]
+        trope_tree = TropeTree(root_name=root_trope)
         while (queue):
             element = queue.pop(0)
-            level = self.move_trope_tree.get_level(element)
-            node = self.move_trope_tree.get_node(element)
+            level = trope_tree.get_level(element)
+            node = trope_tree.get_node(element)
             if level < self.recursion_level and not node.visited:
                 node.visited = True
-                print(f'Retrieving trope {element} of level {level}')
                 scraper = SubTropesScraper(element)
                 children_names = scraper.get_related()
 
                 for child_name in children_names:
-                    if not self.move_trope_tree.is_parent(child_name, element):
+                    if not trope_tree.is_parent(child_name, element):
                         queue.append(child_name)
                         # TODO description
-                        self.move_trope_tree.add_child_from_values(element, child_name)
+                        trope_tree.add_child_from_values(element, child_name)
                     else:
-                        print(f'Trope {child_name} already parsed')
+                        print(f'Trope {child_name} already parsed', file=stderr)
             else:
-                print(f'Ignoring trope {element} of level {level}')
+                print(f'Ignoring trope {element} of level {level}', file=stderr)
+        return trope_tree
 
-    def store_tree(self):
-        ete_tree = Tree(self.move_trope_tree.as_ete3_string(), format=1)
+    def store_tree_as_json(self, output_file_name=None):
+        base_tree = OrderedDict()
+        base_tree['MOVE'] = self.move_trope_tree.as_dictionary()
+        base_tree['CONFRONT'] = self.confront_trope_tree.as_dictionary()
+        base_tree['CHASE_RESOLUTION'] = self.chase_resolution_tree.as_dictionary()
+        base_tree['RESOLVE'] = OrderedDict([
+            ('EndingTropes', self.resolve_ending_tree.as_dictionary()),
+            ('FightScene', self.resolve_fight_tree.as_dictionary())])
+        base_tree['CHARACTER'] = self.character_tree.as_dictionary()
+
+        content = json.dumps(base_tree, indent=2)
+        if output_file_name:
+            with open(output_file_name, 'w') as handler:
+                handler.write(content)
+        else:
+            print(content)
+
+    def _store_tree(self, name, trope_tree):
+        ete_tree = Tree(trope_tree.as_ete3_string(), format=1)
         print(ete_tree.get_ascii(show_internal=True, compact=True))
         tree_style = TreeStyle()
         tree_style.show_leaf_name = False
         tree_style.layout_fn = self._build_layout()
-        ete_tree.render('tree.pdf', tree_style=tree_style)
+        ete_tree.render(f'{name}_tropes.pdf', tree_style=tree_style)
 
     def _build_layout(self):
         def layout(node):

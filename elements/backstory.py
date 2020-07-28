@@ -16,3 +16,9 @@ class BackStory(list):
 
         lines = ['[', content_as_text, ']']
         return '\n'.join(lines)
+
+    def get_events_as_dictionary(self, show_labels=False):
+        events = []
+        for event in self:
+            events.append(event._asdict() if show_labels else list(event))
+        return events
