@@ -1,6 +1,6 @@
 import json
 
-from elements.event import Event
+from common.event import Event
 
 
 class BackStory(list):

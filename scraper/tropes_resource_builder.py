@@ -1,5 +1,6 @@
 import json
 from collections import OrderedDict
+from datetime import datetime
 from sys import stderr
 
 from ete3 import Tree, TreeStyle, AttrFace
@@ -19,24 +20,26 @@ class TropesResourceBuilder(object):
         self.resolve_ending_tree = None
         self.resolve_fight_tree = None
         self.character_tree = None
+        self.run_at = None
         self.trees = OrderedDict()
 
     def retrieve_resource(self):
+        self.run_at = datetime.now()
         self.move_trope_tree = self._retrieve_and_build_trope_tree('LocomotionSuperindex')
         self.confront_trope_tree = self._retrieve_and_build_trope_tree('Conflict')
         self.chase_resolution_tree = self._retrieve_and_build_trope_tree('ChaseScene')
-        self.resolve_ending_tree = self._retrieve_and_build_trope_tree('EndingTropes')
-        self.resolve_fight_tree = self._retrieve_and_build_trope_tree('FightScene')
+        self.resolve_ending_tree = self._retrieve_and_build_trope_tree('EndingTropes', in_level=1)
+        self.resolve_fight_tree = self._retrieve_and_build_trope_tree('FightScene', in_level=1)
         self.character_tree = self._retrieve_and_build_trope_tree('Characters')
 
-    def _retrieve_and_build_trope_tree(self, root_trope):
+    def _retrieve_and_build_trope_tree(self, root_trope, in_level=0):
         queue = [root_trope]
         trope_tree = TropeTree(root_name=root_trope)
         while (queue):
             element = queue.pop(0)
             level = trope_tree.get_level(element)
             node = trope_tree.get_node(element)
-            if level < self.recursion_level and not node.visited:
+            if level + in_level < self.recursion_level and not node.visited:
                 node.visited = True
                 scraper = SubTropesScraper(element)
                 children_names = scraper.get_related()
@@ -54,12 +57,14 @@ class TropesResourceBuilder(object):
 
     def store_tree_as_json(self, output_file_name=None):
         base_tree = OrderedDict()
+        base_tree['META'] = OrderedDict(
+            [('RECURSION_LEVEL', self.recursion_level), ('RUN_AT', self.run_at.isoformat())])
         base_tree['MOVE'] = self.move_trope_tree.as_dictionary()
         base_tree['CONFRONT'] = self.confront_trope_tree.as_dictionary()
         base_tree['CHASE_RESOLUTION'] = self.chase_resolution_tree.as_dictionary()
         base_tree['RESOLVE'] = OrderedDict([
-            ('EndingTropes', self.resolve_ending_tree.as_dictionary()),
-            ('FightScene', self.resolve_fight_tree.as_dictionary())])
+            ('name', 'EndingTropes/FightScene'),
+            ('children', [self.resolve_ending_tree.as_dictionary(), self.resolve_fight_tree.as_dictionary()])])
         base_tree['CHARACTER'] = self.character_tree.as_dictionary()
 
         content = json.dumps(base_tree, indent=2)

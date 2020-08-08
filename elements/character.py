@@ -2,7 +2,7 @@ from typing import List
 
 from elements.backstory import BackStory
 from elements.conflict import Conflict
-from elements.event import Event, EventType
+from common.event import Event, EventType
 
 
 class Character(object):
@@ -48,6 +48,8 @@ class Character(object):
                     return
 
             self._chase_conflict_resolution(t, event_id)
+        else:
+            self._no_operation(t, event_id)
 
     def _resolve_conflict(self, conflict, t, event_id):
         # TODO What if the conflict is not resolved this time? What kind of tropes would it enable?
