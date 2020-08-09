@@ -1,0 +1,4 @@
+# parameters: protagonist, antagonist, place, trope
+
+{protagonist} chased {antagonist} to {place} in "{trope}" way in order to resolve their conflict
+{protagonist} followed {antagonist} to {place}, and resulted in a "{trope}" situation

@@ -1,0 +1,5 @@
+# parameters: protagonist, antagonist, trope
+
+{protagonist} finally resolved the conflict with {antagonist} in a "{trope}" situation
+The confrontation between {protagonist} and {antagonist} was finally resolved as a "{trope}"
+The conflict between {protagonist} and {antagonist} finished as a "{trope}"

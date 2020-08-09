@@ -1,0 +1,5 @@
+# parameters: protagonist, antagonist, trope
+
+{protagonist} had a conflict with {antagonist} of the type "{trope}"
+{protagonist} and {antagonist} had a "{trope}" friction
+There was a problem of type "{trope}" between {protagonist} and {antagonist}

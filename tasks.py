@@ -34,8 +34,8 @@ def make_up_story(context, world_resource, tropes_resource, seed=None):
     random = Random(x=seed)
     print(f'Seed: {seed}', file=stderr)
 
-    builder = ForgetfulStoryBuilder(world_resource, tropes_resource)
+    builder = ForgetfulStoryBuilder(random, world_resource, tropes_resource)
     builder.prepare()
-    tropes = builder.select_tropes(random)
+    tropes = builder.select_tropes()
     story = builder.tell_story(tropes)
     print(story)

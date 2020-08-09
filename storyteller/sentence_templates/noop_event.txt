@@ -1,0 +1,6 @@
+# parameters: protagonist
+
+Life kept going for {protagonist}
+Life didn't change much for a while for {protagonist}
+Things were calmed for a while for {protagonist}
+Nothing special happened for a while for {protagonist}

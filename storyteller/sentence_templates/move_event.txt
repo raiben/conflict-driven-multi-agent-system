@@ -1,0 +1,5 @@
+# parameters: protagonist, place, trope
+
+{protagonist} went to {place} with a "{trope}"
+{protagonist} used the "{trope}" to move to {place}
+{protagonist} moved to {place} in a vehicle of type "{trope}"

@@ -1,0 +1,7 @@
+# parameters: protagonist, trope
+
+This is the story of {protagonist}, the classic "{trope}"
+This is the "{trope}" called {protagonist}
+This is {protagonist}. {protagonist} is a "{trope}"
+{protagonist} is a "{trope}"
+

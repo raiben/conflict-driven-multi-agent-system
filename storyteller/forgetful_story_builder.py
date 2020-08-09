@@ -6,12 +6,13 @@ from sys import stderr
 from common.event import Event, EventType
 from common.utils import uncamel
 from storyteller.random_word_generator import RandomWordGenerator
+from storyteller.sentence_picker import SentencePicker
 from storyteller.story_tropes import StoryTropes
 
 
 class ForgetfulStoryBuilder(object):
-    def __init__(self, world_resource, tropes_resource):
-        self.random = None
+    def __init__(self, random, world_resource, tropes_resource):
+        self.random = random
         self.world_resource = world_resource
         self.tropes_resource = tropes_resource
         self.global_events = []
@@ -29,6 +30,14 @@ class ForgetfulStoryBuilder(object):
 
         self.character_names = {}
         self.place_names = {}
+
+        self.story_introduction_sentence_picker = None
+        self.character_introduction_sentence_picker = None
+        self.move_event_sentence_picker = None
+        self.confront_event_sentence_picker = None
+        self.chase_resolution_event_sentence_picker = None
+        self.resolve_event_sentence_picker = None
+        self.noop_event_sentence_picker = None
 
     def prepare(self):
         with open(self.world_resource, 'r') as handler:
@@ -63,6 +72,21 @@ class ForgetfulStoryBuilder(object):
         self.resolve_tropes = list(self._tropes_in(tropes_dictionary['RESOLVE']))
         self.character_tropes = list(self._tropes_in(tropes_dictionary['CHARACTER']))
 
+        self.story_introduction_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/story_introduction.txt')
+        self.character_introduction_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/character_introduction.txt')
+        self.move_event_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/move_event.txt')
+        self.confront_event_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/confront_event.txt')
+        self.chase_resolution_event_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/chase_resolution_event.txt')
+        self.resolve_event_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/resolve_event.txt')
+        self.noop_event_sentence_picker = SentencePicker(
+            self.random, 'sentence_templates/noop_event.txt')
+
         self._print_summary()
 
     def _tropes_in(self, element, parent=None):
@@ -73,13 +97,12 @@ class ForgetfulStoryBuilder(object):
         for child in children:
             all_tropes = all_tropes.union(self._tropes_in(child, element['name']))
 
-        return all_tropes
+        return sorted(all_tropes)
 
-    def select_tropes(self, random):
-        self.random = random
+    def select_tropes(self):
         character_tropes = []
         for character in self.characters:
-            character_tropes.append(random.randint(0, len(self.character_tropes) - 1))
+            character_tropes.append(self.random.randint(0, len(self.character_tropes) - 1))
 
         event_tropes = []
         for event in self.global_events:
@@ -93,7 +116,7 @@ class ForgetfulStoryBuilder(object):
             if event.action == EventType.RESOLVE.value:
                 length = len(self.resolve_tropes)
 
-            index = random.randint(0, length - 1) if length else 0
+            index = self.random.randint(0, length - 1) if length else 0
             event_tropes.append(index)
 
         return StoryTropes(character_tropes, event_tropes)
@@ -156,53 +179,54 @@ class ForgetfulStoryBuilder(object):
         character_index = int(character_id[1:])
         trope_id = story_tropes.character_tropes[character_index]
         trope_name = uncamel(self.character_tropes[trope_id])
-        return [f'This is the story of {self.character_names[character_id]}, '
-                f'the classical "{trope_name}" character']
+        sentence = self.story_introduction_sentence_picker.get_sentence(
+            protagonist=self.character_names[character_id], trope=trope_name)
+        return [sentence]
 
     def describe_event(self, story_tropes, event, character_id, elements_introduced, previous_event_time):
         if event.action == EventType.MOVE.value:
-            return self.describe_move(story_tropes, event, character_id, elements_introduced, previous_event_time)
+            return self.describe_move(story_tropes, event, character_id, elements_introduced)
         if event.action == EventType.CONFRONT.value:
-            return self.describe_confront(story_tropes, event, character_id, elements_introduced, previous_event_time)
+            return self.describe_confront(story_tropes, event, character_id, elements_introduced)
         if event.action == EventType.CHASE_RESOLUTION.value:
-            return self.describe_chase_resolution(story_tropes, event, character_id, elements_introduced,
-                                                  previous_event_time)
+            return self.describe_chase_resolution(story_tropes, event, character_id, elements_introduced)
         if event.action == EventType.RESOLVE.value:
             return self.describe_resolve(story_tropes, event, character_id, elements_introduced)
 
     def describe_noop(self, character_id):
-        time_passed_expressions = [f'Nothing special happened for a while for {self.character_names[character_id]}',
-                                   'Days passed', 'Time passed',
-                                   f'Life kept going for {self.character_names[character_id]}']
-        return [self.random.choice(time_passed_expressions)]
+        return [self.noop_event_sentence_picker.get_sentence(protagonist=self.character_names[character_id])]
 
-    def describe_move(self, story_tropes, event, character_id, elements_introduced, previous_event_time):
+    def describe_move(self, story_tropes, event, character_id, elements_introduced):
         trope_id = story_tropes.event_tropes[event.id]
         trope_name = uncamel(self.move_tropes[trope_id])
-        return [f'{self.character_names[character_id]} moved to {self.place_names[event.places[1]]} '
-                f'in the classical "{trope_name}" event']
+        sentence = self.move_event_sentence_picker.get_sentence(
+            protagonist=self.character_names[character_id], trope=trope_name,
+            place=self.place_names[event.places[1]])
+        return [sentence]
 
-    def describe_confront(self, story_tropes, event, character_id, elements_introduced, previous_event_time):
+    def describe_confront(self, story_tropes, event, character_id, elements_introduced):
         story = self._introduce_new_characters(story_tropes, event.protagonists + event.antagonists,
                                                elements_introduced)
 
         trope_id = story_tropes.event_tropes[event.id]
         trope_name = uncamel(self.confront_tropes[trope_id])
-        story += [f'{self.character_names[event.protagonists[0]]} had a conflict '
-                  f'with {self.character_names[event.antagonists[0]]} '
-                  f'related to the classical "{trope_name}" event']
+        sentence = self.confront_event_sentence_picker.get_sentence(
+            protagonist=self.character_names[event.protagonists[0]],
+            antagonist=self.character_names[event.antagonists[0]], trope=trope_name)
+        story += [sentence]
         return story
 
-    def describe_chase_resolution(self, story_tropes, event, character_id, elements_introduced, previous_event_time):
+    def describe_chase_resolution(self, story_tropes, event, character_id, elements_introduced):
         story = self._introduce_new_characters(story_tropes, event.protagonists + event.antagonists,
                                                elements_introduced)
 
         trope_id = story_tropes.event_tropes[event.id]
         trope_name = uncamel(self.chase_resolution_tropes[trope_id])
-        story += [f'{self.character_names[event.protagonists[0]]} '
-                  f'chased {self.character_names[event.antagonists[0]]} '
-                  f'to {self.place_names[event.places[1]]} '
-                  f'in the classical "{trope_name}" event']
+        sentence = self.chase_resolution_event_sentence_picker.get_sentence(
+            protagonist=self.character_names[event.protagonists[0]],
+            antagonist=self.character_names[event.antagonists[0]], place=self.place_names[event.places[1]],
+            trope=trope_name)
+        story += [sentence]
         return story
 
     def describe_resolve(self, story_tropes, event, character_id, elements_introduced):
@@ -211,9 +235,10 @@ class ForgetfulStoryBuilder(object):
 
         trope_id = story_tropes.event_tropes[event.id]
         trope_name = uncamel(self.resolve_tropes[trope_id])
-        story += [f'{self.character_names[event.protagonists[0]]} '
-                  f'finally resolved the conflict with {self.character_names[event.antagonists[0]]} '
-                  f'in the classical "{trope_name}" event']
+        sentence = self.resolve_event_sentence_picker.get_sentence(
+            protagonist=self.character_names[event.protagonists[0]],
+            antagonist=self.character_names[event.antagonists[0]], trope=trope_name)
+        story += [sentence]
         return story
 
     def _introduce_new_characters(self, story_tropes, characters, elements_introduced):
@@ -223,7 +248,8 @@ class ForgetfulStoryBuilder(object):
                 character_index = int(character_id[1:])
                 trope_id = story_tropes.character_tropes[character_index]
                 trope_name = uncamel(self.character_tropes[trope_id])
-                story.append(f'{self.character_names[character_id]}, '
-                             f'the classical "{trope_name}" character, was also there')
+                sentence = self.character_introduction_sentence_picker.get_sentence(
+                    character=self.character_names[character_id], trope=trope_name)
+                story.append(sentence)
                 elements_introduced.add(character_id)
         return story

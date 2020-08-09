@@ -1,0 +1,5 @@
+# parameters: character, trope
+
+{character}, a "{trope}", was in the same place as the protagonist
+The "{trope}" {character} met the protagonist
+{character}, a "{trope}", knew the protagonist
