@@ -4,8 +4,8 @@ from collections import OrderedDict
 from datetime import datetime
 from random import Random
 
-from elements.backstory import BackStory
-from elements.character import Character
+from skeleton.backstory import BackStory
+from skeleton.character import Character
 
 
 class World(object):

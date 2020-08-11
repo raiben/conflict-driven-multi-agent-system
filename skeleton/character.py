@@ -1,7 +1,7 @@
 from typing import List
 
-from elements.backstory import BackStory
-from elements.conflict import Conflict
+from skeleton.backstory import BackStory
+from skeleton.conflict import Conflict
 from common.event import Event, EventType
 
 

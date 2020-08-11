@@ -4,9 +4,10 @@ from sys import stderr
 
 from invoke import task
 
-from elements.world import World
+from skeleton.world import World
 from scraper.tropes_resource_builder import TropesResourceBuilder
-from storyteller.forgetful_story_builder import ForgetfulStoryBuilder
+from storyteller.forgetful_story_teller import ForgetfulStoryTeller
+from trope_selector.trope_selector import TropeSelector
 
 
 @task
@@ -34,8 +35,11 @@ def make_up_story(context, world_resource, tropes_resource, seed=None, extended_
     random = Random(x=seed)
     print(f'Seed: {seed}', file=stderr)
 
-    builder = ForgetfulStoryBuilder(random, world_resource, tropes_resource, extended_dataset_resource)
-    builder.prepare()
-    tropes = builder.select_tropes()
-    story = builder.tell_story(tropes)
+    selector = TropeSelector(random, world_resource, tropes_resource, extended_dataset_resource)
+    selector.prepare()
+    tropes = selector.select_random_tropes()
+
+    teller = ForgetfulStoryTeller(random, world_resource)
+    teller.prepare()
+    story = teller.tell_story(tropes)
     print(story)
