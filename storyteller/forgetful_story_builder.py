@@ -11,10 +11,13 @@ from storyteller.story_tropes import StoryTropes
 
 
 class ForgetfulStoryBuilder(object):
-    def __init__(self, random, world_resource, tropes_resource):
+    def __init__(self, random, world_resource, tropes_resource, extended_dataset_resource=None):
         self.random = random
         self.world_resource = world_resource
         self.tropes_resource = tropes_resource
+        self.extended_dataset_resource = extended_dataset_resource
+        self.tropes_to_consider = set()
+        self.tropes_excluded = set()
         self.global_events = []
         self.grid_size = 0
         self.character_events = OrderedDict()
@@ -62,15 +65,21 @@ class ForgetfulStoryBuilder(object):
                 event = self.events_by_id[id]
                 self.character_events[character].append(event)
 
+        if self.extended_dataset_resource:
+            with open(self.extended_dataset_resource, 'r') as handler:
+                line = handler.readline()
+                columns = line.split(',')
+                self.tropes_to_consider = set(columns[6:])
+
         with open(self.tropes_resource, 'r') as handler:
             tropes_content = handler.read()
             tropes_dictionary = json.loads(tropes_content)
 
-        self.move_tropes = list(self._tropes_in(tropes_dictionary['MOVE']))
-        self.confront_tropes = list(self._tropes_in(tropes_dictionary['CONFRONT']))
-        self.chase_resolution_tropes = list(self._tropes_in(tropes_dictionary['CHASE_RESOLUTION']))
-        self.resolve_tropes = list(self._tropes_in(tropes_dictionary['RESOLVE']))
-        self.character_tropes = list(self._tropes_in(tropes_dictionary['CHARACTER']))
+        self.move_tropes = sorted(list(self._tropes_in(tropes_dictionary['MOVE'])))
+        self.confront_tropes = sorted(list(self._tropes_in(tropes_dictionary['CONFRONT'])))
+        self.chase_resolution_tropes = sorted(list(self._tropes_in(tropes_dictionary['CHASE_RESOLUTION'])))
+        self.resolve_tropes = sorted(list(self._tropes_in(tropes_dictionary['RESOLVE'])))
+        self.character_tropes = sorted(list(self._tropes_in(tropes_dictionary['CHARACTER'])))
 
         self.story_introduction_sentence_picker = SentencePicker(
             self.random, 'sentence_templates/story_introduction.txt')
@@ -87,17 +96,22 @@ class ForgetfulStoryBuilder(object):
         self.noop_event_sentence_picker = SentencePicker(
             self.random, 'sentence_templates/noop_event.txt')
 
+
         self._print_summary()
 
     def _tropes_in(self, element, parent=None):
         all_tropes = set()
         name = f'{element["name"]} ({parent})' if parent else element['name']
-        all_tropes.add(name)
+        if not self.tropes_to_consider or element['name'] in self.tropes_to_consider:
+            all_tropes.add(name)
+        else:
+            self.tropes_excluded.add(name)
+
         children = element.get('children', [])
         for child in children:
             all_tropes = all_tropes.union(self._tropes_in(child, element['name']))
 
-        return sorted(all_tropes)
+        return all_tropes
 
     def select_tropes(self):
         character_tropes = []
@@ -128,6 +142,7 @@ class ForgetfulStoryBuilder(object):
         summary.append(f'- {len(self.confront_tropes)} confront tropes')
         summary.append(f'- {len(self.chase_resolution_tropes)} chase-resolution tropes')
         summary.append(f'- {len(self.resolve_tropes)} resolve tropes')
+        summary.append(f'{len(self.tropes_excluded)} tropes excluded')
         print('\n'.join(summary), file=stderr)
 
     def tell_story(self, tropes):

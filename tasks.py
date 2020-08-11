@@ -29,12 +29,12 @@ def build_tropes_resource(context, recursion_level=2, output_file=None):
 
 
 @task
-def make_up_story(context, world_resource, tropes_resource, seed=None):
+def make_up_story(context, world_resource, tropes_resource, seed=None, extended_dataset_resource=None):
     seed = int(time.time() * 1000000) if seed is None else int(seed)
     random = Random(x=seed)
     print(f'Seed: {seed}', file=stderr)
 
-    builder = ForgetfulStoryBuilder(random, world_resource, tropes_resource)
+    builder = ForgetfulStoryBuilder(random, world_resource, tropes_resource, extended_dataset_resource)
     builder.prepare()
     tropes = builder.select_tropes()
     story = builder.tell_story(tropes)
