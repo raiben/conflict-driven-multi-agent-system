@@ -5,3 +5,5 @@ cssselect==1.1.0
 ete3==3.1.1
 six==1.15.0
 PyQt5==5.15.0
+joblib==0.16.0
+scikit-learn==0.23.2
