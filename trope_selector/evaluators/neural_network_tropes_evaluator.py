@@ -1,3 +1,4 @@
+import csv
 import logging
 
 import joblib
@@ -22,7 +23,6 @@ class NeuralNetworkTropesEvaluator():
         self.base_empty_input = [0 for index in range(0, len(self.tropes))]
 
     def evaluate(self, list_of_tropes: list):
-        self._track_message(f'Evaluating {list_of_tropes}')
         trope_indexes = self._build_list_of_trope_indexes(list_of_tropes)
         input = self._build_input(trope_indexes)
         predicted_rating = self.neural_network.predict([input])
@@ -32,7 +32,6 @@ class NeuralNetworkTropesEvaluator():
         return evaluation
 
     def evaluate_just_rating(self, list_of_tropes: list):
-        #self._track_message(f'Evaluating just the rating {list_of_tropes}')
         trope_indexes = self._build_list_of_trope_indexes(list_of_tropes)
         input = self._build_input(trope_indexes)
         return self.neural_network.predict([input])
@@ -68,15 +67,30 @@ class EvaluationTrope(object):
 
 
 if __name__ == "__main__":
-    neural_network_file = u'/Users/phd/workspace/made/made_recommender/datasets/evaluator_[26273, 162, 1].sav'
+    neural_network_file = u'/Users/phd/Downloads/imdb_tvtropes_datasets_202008/evaluator_[37343, 193, 1].sav'
     evaluator = NeuralNetworkTropesEvaluator(neural_network_file)
 
     import bz2
     import json
-    with bz2.open('/Users/phd/workspace/made/made_recommender/datasets/extended_dataset.json.bz2', "rb") as f:
-        content = f.read()
-    json_bytes = content.decode('utf-8')
-    films = json.loads(json_bytes)
+    films = [] # {name, rating, tropes}
+    with open('/Users/phd/Downloads/imdb_tvtropes_datasets_202008/extended_dataset_202008.csv', "r") as f:
+        heading = f.readline()
+        columns = heading.split(',')
+        lines = f.readlines()
+        reader = csv.reader(lines)
+        for index, line in enumerate(reader):
+            if index%1000 == 0:
+                print(f'Read {index} films')
+            film = {'name': '', 'rating':0, 'tropes':[]}
+            zipped_column_values = zip(columns, line)
+            for column, value in zipped_column_values:
+                if column == 'NameIMDB':
+                    film['name'] = value
+                if column == 'Rating':
+                    film['rating'] = float(value)
+                if column not in ['Id','NameTvTropes','NameIMDB','Rating','Votes','Year'] and value == '1':
+                    film['tropes'].append(column)
+            films.append(film)
 
     for film in films:
         film['evaluation'] = evaluator.evaluate_just_rating(film['tropes'])[0]

@@ -4,13 +4,16 @@ from sys import stderr
 
 from common.event import Event, EventType
 from common.story_tropes import StoryTropes
+from trope_selector.genetic_algorithms.genetic_algorithm import GeneticAlgorithm
 
 
 class TropeSelector(object):
-    def __init__(self, random, world_resource, tropes_resource, extended_dataset_resource=None):
+    def __init__(self, random, world_resource, tropes_resource, old_style_seed, extended_dataset_resource=None,
+                 neural_network_file=None):
         self.random = random
         self.world_resource = world_resource
         self.tropes_resource = tropes_resource
+        self.old_style_seed = old_style_seed
         self.extended_dataset_resource = extended_dataset_resource
         self.tropes_to_consider = set()
         self.tropes_excluded = set()
@@ -18,6 +21,7 @@ class TropeSelector(object):
         self.grid_size = 0
         self.character_events = OrderedDict()
         self.events_by_id = OrderedDict()
+        self.neural_network_file = neural_network_file
 
         self.places = []
         self.characters = []
@@ -117,5 +121,22 @@ class TropeSelector(object):
 
             index = self.random.choice(candidates) if candidates else None
             event_tropes.append(index)
+
+        return StoryTropes(character_tropes, event_tropes)
+
+    def select_best_tropes(self):
+        if not self.neural_network_file:
+            raise Exception('No neural network file provided')
+
+        algorithm = GeneticAlgorithm(self.random, self.characters, self.global_events, self.events_by_id,
+                                     self.character_tropes, self.move_tropes, self.confront_tropes,
+                                     self.chase_resolution_tropes, self.resolve_tropes, self.neural_network_file,
+                                     self.old_style_seed)
+        algorithm.prepare()
+        algorithm.run()
+        best = algorithm.get_best()
+
+        character_tropes = best[0:5]
+        event_tropes = best[5:]
 
         return StoryTropes(character_tropes, event_tropes)

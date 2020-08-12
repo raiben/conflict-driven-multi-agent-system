@@ -30,14 +30,37 @@ def build_tropes_resource(context, recursion_level=2, output_file=None):
 
 
 @task
-def make_up_story(context, world_resource, tropes_resource, seed=None, extended_dataset_resource=None):
+def make_up_random_story(context, world_resource, tropes_resource, seed=None, extended_dataset_resource=None):
     seed = int(time.time() * 1000000) if seed is None else int(seed)
     random = Random(x=seed)
     print(f'Seed: {seed}', file=stderr)
 
-    selector = TropeSelector(random, world_resource, tropes_resource, extended_dataset_resource)
+    general_seed = seed + 1
+    print(f'General seed (old-style): {general_seed}', file=stderr)
+
+    selector = TropeSelector(random, world_resource, tropes_resource, general_seed, extended_dataset_resource)
     selector.prepare()
     tropes = selector.select_random_tropes()
+
+    teller = ForgetfulStoryTeller(random, world_resource)
+    teller.prepare()
+    story = teller.tell_story(tropes)
+    print(story)
+
+@task
+def make_up_best_story(context, world_resource, tropes_resource, neural_network_file, seed=None,
+                       extended_dataset_resource=None):
+    seed = int(time.time() * 1000000) if seed is None else int(seed)
+    random = Random(x=seed)
+    print(f'Seed: {seed}', file=stderr)
+
+    general_seed = seed+1
+    print(f'General seed (old-style): {general_seed}', file=stderr)
+
+    selector = TropeSelector(random, world_resource, tropes_resource, general_seed, extended_dataset_resource,
+                             neural_network_file)
+    selector.prepare()
+    tropes = selector.select_best_tropes()
 
     teller = ForgetfulStoryTeller(random, world_resource)
     teller.prepare()
