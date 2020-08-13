@@ -1,3 +1,4 @@
+import statistics
 import random
 
 from deap import creator, base, tools, algorithms
@@ -7,13 +8,14 @@ from trope_selector.evaluators.neural_network_tropes_evaluator import NeuralNetw
 
 
 class GeneticAlgorithm(object):
-    def __init__(self, random, characters, global_events, events_by_id, character_tropes, move_tropes, confront_tropes,
-                 chase_resolution_tropes,resolve_tropes, neural_network_file, old_style_seed):
+    def __init__(self, random, characters, global_events, character_events, character_tropes, move_tropes, confront_tropes,
+                 chase_resolution_tropes,resolve_tropes, neural_network_file, old_style_seed,
+                 use_global_tropes_rating=False, use_character_backstory_tropes_rating=True):
 
         self.random = random
         self.characters = characters
         self.global_events = global_events
-        self.events_by_id = events_by_id
+        self.character_events = character_events
         self.character_tropes = character_tropes
         self.move_tropes = move_tropes
         self.confront_tropes = confront_tropes
@@ -21,6 +23,8 @@ class GeneticAlgorithm(object):
         self.resolve_tropes = resolve_tropes
         self.neural_network_file = neural_network_file
         self.old_style_seed = old_style_seed
+        self.use_global_tropes_rating = use_global_tropes_rating
+        self.use_character_backstory_tropes_rating = use_character_backstory_tropes_rating
         self.evaluator = None
         self.best = None
 
@@ -42,7 +46,7 @@ class GeneticAlgorithm(object):
         random.seed(self.old_style_seed)
         population = toolbox.population(n=300)
 
-        NGEN = 20
+        NGEN = 500
         for gen in range(NGEN):
             offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
             fits = toolbox.map(toolbox.evaluate, offspring)
@@ -88,11 +92,36 @@ class GeneticAlgorithm(object):
     def build_evaluator(self):
         def evaluate(individual):
             evaluator = self.evaluator
-            trope_set = set(individual)
-            if None in trope_set:
-                trope_set.remove(None)
-            evaluation = evaluator.evaluate(trope_set)
-            return evaluation.rating[0],
+            if self.use_global_tropes_rating:
+                trope_set = set(individual)
+                if None in trope_set:
+                    trope_set.remove(None)
+                evaluation = evaluator.evaluate(trope_set)
+                return evaluation.rating[0],
+
+            if self.use_character_backstory_tropes_rating:
+                ratings = []
+                for character in self.characters:
+                    trope_set = set()
+
+                    for event in self.character_events[character]:
+                        if event.action != EventType.NOOP.value:
+                            event_trope = individual[event.id+len(self.characters)]
+                            trope_set.add(event_trope)
+                            protagonist_trope = individual[int(event.protagonists[0].replace('c',''))]
+                            trope_set.add(protagonist_trope)
+                            if event.antagonists:
+                                antagonist_trope = individual[int(event.antagonists[0].replace('c', ''))]
+                                trope_set.add(antagonist_trope)
+
+
+                    if None in trope_set:
+                        trope_set.remove(None)
+
+                    evaluation = evaluator.evaluate(trope_set)
+                    ratings.append(evaluation.rating[0])
+
+                return statistics.mean(ratings),
 
         return evaluate
 

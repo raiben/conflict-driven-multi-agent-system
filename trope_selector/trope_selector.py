@@ -128,7 +128,7 @@ class TropeSelector(object):
         if not self.neural_network_file:
             raise Exception('No neural network file provided')
 
-        algorithm = GeneticAlgorithm(self.random, self.characters, self.global_events, self.events_by_id,
+        algorithm = GeneticAlgorithm(self.random, self.characters, self.global_events, self.character_events,
                                      self.character_tropes, self.move_tropes, self.confront_tropes,
                                      self.chase_resolution_tropes, self.resolve_tropes, self.neural_network_file,
                                      self.old_style_seed)
