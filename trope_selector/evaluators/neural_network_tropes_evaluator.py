@@ -1,5 +1,6 @@
 import csv
 import logging
+from functools import lru_cache
 
 import joblib
 
@@ -31,6 +32,7 @@ class NeuralNetworkTropesEvaluator():
         evaluation = Evaluation(tropes=evaluation_tropes, rating=predicted_rating)
         return evaluation
 
+    @lru_cache(maxsize=None)
     def evaluate_just_rating(self, list_of_tropes: list):
         trope_indexes = self._build_list_of_trope_indexes(list_of_tropes)
         input = self._build_input(trope_indexes)

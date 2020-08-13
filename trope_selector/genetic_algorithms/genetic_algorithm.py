@@ -96,8 +96,8 @@ class GeneticAlgorithm(object):
                 trope_set = set(individual)
                 if None in trope_set:
                     trope_set.remove(None)
-                evaluation = evaluator.evaluate(trope_set)
-                return evaluation.rating[0],
+                evaluation = evaluator.evaluate_just_rating(tuple(sorted(list(trope_set))))
+                return evaluation[0],
 
             if self.use_character_backstory_tropes_rating:
                 ratings = []
@@ -118,8 +118,8 @@ class GeneticAlgorithm(object):
                     if None in trope_set:
                         trope_set.remove(None)
 
-                    evaluation = evaluator.evaluate(trope_set)
-                    ratings.append(evaluation.rating[0])
+                    evaluation = evaluator.evaluate_just_rating(tuple(sorted(list(trope_set))))
+                    ratings.append(evaluation[0])
 
                 return statistics.mean(ratings),
 
