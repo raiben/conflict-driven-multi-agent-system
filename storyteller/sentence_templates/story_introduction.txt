@@ -1,7 +1,7 @@
-# parameters: protagonist, trope
+# parameters: protagonist, character_trope, place, place_trope
 
-This is the story of {protagonist}, the classic "{trope}"
-This is the "{trope}" called {protagonist}
-This is {protagonist}. {protagonist} is a "{trope}"
-{protagonist} is a "{trope}"
+This is the story of {protagonist}, the classic "{character_trope}" in {place}, a "{place_trope}"
+This is the "{character_trope}" called {protagonist}. {protagonist} was living in the "{place_trope}" called {place}
+This is {protagonist}. {protagonist} was a "{character_trope}" in {place}, a "{place_trope}"
+{protagonist} was a "{character_trope}" in {place}, a "{place_trope}"
 

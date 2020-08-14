@@ -1,3 +1,5 @@
+import copy
+import itertools
 import json
 import math
 from collections import OrderedDict
@@ -16,6 +18,7 @@ class World(object):
         self.iterations = iterations
 
         self.positions = None
+        self.initial_positions = None
         self.characters = None
         self.backstory = None
         self.run_at = None
@@ -40,6 +43,8 @@ class World(object):
             random_y = self.random.randint(0, self.grid_size - 1)
             random_position = self.positions[random_x][random_y]
             random_position.add(character)
+
+        self.initial_positions = copy.deepcopy(self.positions)
 
     def run(self):
         self.run_at = datetime.now()
@@ -165,7 +170,13 @@ class World(object):
             ('SEED', seed), ('GRID_SIZE', self.grid_size), ('CHARACTER_SIZE', self.character_size),
             ('ITERATIONS', self.iterations), ('RUN_AT', self.run_at.isoformat())])
         world_dictionary['CHARACTERS'] = [character.name for character in self.characters]
-        world_dictionary['CHARACTERS'] = [character.name for character in self.characters]
+        world_dictionary['PLACES'] = []
+        world_dictionary['INITIAL_POSITIONS'] = OrderedDict()
+        for x, y in itertools.product(range(self.grid_size), range(self.grid_size)):
+            place_name = f'{x}, {y}'
+            world_dictionary['PLACES'].append(place_name)
+            for character in self.initial_positions[x][y]:
+                world_dictionary['INITIAL_POSITIONS'][character.name] = place_name
         world_dictionary['EVENTS'] = OrderedDict()
         world_dictionary['EVENTS']['GLOBAL'] = self.backstory.get_events_as_dictionary(show_labels)
         for character in self.characters:

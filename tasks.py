@@ -1,9 +1,11 @@
+import json
 import time
 from random import Random
 from sys import stderr
 
 from invoke import task
 
+from representation.skeleton_representer import SkeletonRepresenter
 from skeleton.world import World
 from scraper.tropes_resource_builder import TropesResourceBuilder
 from storyteller.forgetful_story_teller import ForgetfulStoryTeller
@@ -11,7 +13,7 @@ from trope_selector.trope_selector import TropeSelector
 
 
 @task
-def world(context, seed=None, grid_size=2, characters=5, iterations=10, show_labels=False, output_file=None):
+def build_skeleton(context, seed=None, grid_size=2, characters=5, iterations=10, show_labels=False, output_file=None):
     seed = int(time.time() * 1000000) if seed is None else seed
     random = Random(seed)
     print(f'Seed: {seed}', file=stderr)
@@ -49,7 +51,7 @@ def make_up_random_story(context, world_resource, tropes_resource, seed=None, ex
 
 @task
 def make_up_best_story(context, world_resource, tropes_resource, neural_network_file, seed=None,
-                       extended_dataset_resource=None):
+                       extended_dataset_resource=None, output_solution_file=None):
     seed = int(time.time() * 1000000) if seed is None else int(seed)
     random = Random(x=seed)
     print(f'Seed: {seed}', file=stderr)
@@ -58,11 +60,17 @@ def make_up_best_story(context, world_resource, tropes_resource, neural_network_
     print(f'General seed (old-style): {general_seed}', file=stderr)
 
     selector = TropeSelector(random, world_resource, tropes_resource, general_seed, extended_dataset_resource,
-                             neural_network_file)
+                             neural_network_file, output_solution_file)
     selector.prepare()
     tropes = selector.select_best_tropes()
+    selector.close()
 
     teller = ForgetfulStoryTeller(random, world_resource)
     teller.prepare()
     story = teller.tell_story(tropes)
     print(story)
+
+@task
+def present_skeleton(context, world_resource, output_file):
+    presenter = SkeletonRepresenter(world_resource, output_file)
+    presenter.present()

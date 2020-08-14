@@ -31,6 +31,7 @@ class TropesResourceBuilder(object):
         self.resolve_ending_tree = self._retrieve_and_build_trope_tree('EndingTropes', in_level=1)
         self.resolve_fight_tree = self._retrieve_and_build_trope_tree('FightScene', in_level=1)
         self.character_tree = self._retrieve_and_build_trope_tree('Characters')
+        self.place_tree = self._retrieve_and_build_trope_tree('Settings')
 
     def _retrieve_and_build_trope_tree(self, root_trope, in_level=0):
         queue = [root_trope]
@@ -66,6 +67,7 @@ class TropesResourceBuilder(object):
             ('name', 'EndingTropes/FightScene'),
             ('children', [self.resolve_ending_tree.as_dictionary(), self.resolve_fight_tree.as_dictionary()])])
         base_tree['CHARACTER'] = self.character_tree.as_dictionary()
+        base_tree['PLACE'] = self.place_tree.as_dictionary()
 
         content = json.dumps(base_tree, indent=2)
         if output_file_name:

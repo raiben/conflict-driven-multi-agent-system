@@ -1,4 +1,5 @@
 import json
+import sys
 from collections import OrderedDict
 from sys import stderr
 
@@ -9,7 +10,7 @@ from trope_selector.genetic_algorithms.genetic_algorithm import GeneticAlgorithm
 
 class TropeSelector(object):
     def __init__(self, random, world_resource, tropes_resource, old_style_seed, extended_dataset_resource=None,
-                 neural_network_file=None):
+                 neural_network_file=None, output_solution_file=None):
         self.random = random
         self.world_resource = world_resource
         self.tropes_resource = tropes_resource
@@ -22,14 +23,17 @@ class TropeSelector(object):
         self.character_events = OrderedDict()
         self.events_by_id = OrderedDict()
         self.neural_network_file = neural_network_file
+        self.output_solution_file = output_solution_file
 
         self.places = []
         self.characters = []
+        self.original_positions = []
         self.move_tropes = []
         self.confront_tropes = []
         self.chase_resolution_tropes = []
         self.resolve_tropes = []
         self.character_tropes = []
+        self.place_tropes = []
 
         self.story_introduction_sentence_picker = None
         self.character_introduction_sentence_picker = None
@@ -38,14 +42,23 @@ class TropeSelector(object):
         self.chase_resolution_event_sentence_picker = None
         self.resolve_event_sentence_picker = None
         self.noop_event_sentence_picker = None
+        self.output_file = None
 
     def prepare(self):
+        if self.output_solution_file:
+            self.output_file = open(self.output_solution_file, 'w')
+
         with open(self.world_resource, 'r') as handler:
             log_content = handler.read()
             log = json.loads(log_content)
 
         for character in log['CHARACTERS']:
             self.characters.append(character)
+
+        for place in log['PLACES']:
+            self.places.append(place)
+
+        self.initial_positions = log['INITIAL_POSITIONS']
 
         for event_dictionary in log['EVENTS']['GLOBAL']:
             event = Event(**event_dictionary)
@@ -74,6 +87,7 @@ class TropeSelector(object):
         self.chase_resolution_tropes = sorted(list(self._tropes_in(tropes_dictionary['CHASE_RESOLUTION'])))
         self.resolve_tropes = sorted(list(self._tropes_in(tropes_dictionary['RESOLVE'])))
         self.character_tropes = sorted(list(self._tropes_in(tropes_dictionary['CHARACTER'])))
+        self.place_tropes = sorted(list(self._tropes_in(tropes_dictionary['PLACE'])))
 
         self._print_summary()
 
@@ -107,6 +121,10 @@ class TropeSelector(object):
         for character in self.characters:
             character_tropes.append(self.random.choice(self.character_tropes))
 
+        place_tropes = []
+        for place in self.places:
+            place_tropes.append(self.random.choice(self.place_tropes))
+
         event_tropes = []
         for event in self.global_events:
             candidates = []
@@ -122,21 +140,34 @@ class TropeSelector(object):
             index = self.random.choice(candidates) if candidates else None
             event_tropes.append(index)
 
-        return StoryTropes(character_tropes, event_tropes)
+        return StoryTropes(character_tropes, place_tropes, event_tropes)
 
     def select_best_tropes(self):
         if not self.neural_network_file:
             raise Exception('No neural network file provided')
 
-        algorithm = GeneticAlgorithm(self.random, self.characters, self.global_events, self.character_events,
-                                     self.character_tropes, self.move_tropes, self.confront_tropes,
-                                     self.chase_resolution_tropes, self.resolve_tropes, self.neural_network_file,
-                                     self.old_style_seed)
+        algorithm = GeneticAlgorithm(self.random, self.characters, self.places, self.initial_positions,
+                                     self.global_events, self.character_events, self.character_tropes,
+                                     self.place_tropes, self.move_tropes, self.confront_tropes,
+                                     self.chase_resolution_tropes, self.resolve_tropes,
+                                     self.neural_network_file, self.old_style_seed, write=self.build_output_writer())
         algorithm.prepare()
         algorithm.run()
         best = algorithm.get_best()
 
-        character_tropes = best[0:5]
-        event_tropes = best[5:]
+        character_tropes = best[0:len(self.characters)]
+        place_tropes = best[len(self.characters):len(self.characters)+len(self.places)]
+        event_tropes = best[len(self.characters)+len(self.places):]
 
-        return StoryTropes(character_tropes, event_tropes)
+        return StoryTropes(character_tropes, place_tropes, event_tropes)
+
+    def build_output_writer(self):
+        def write(text):
+            output = self.output_file if self.output_file else sys.stdout
+            print(text, file=output)
+
+        return write
+
+    def close(self):
+        if self.output_file and not self.output_file.closed:
+            self.output_file.close()

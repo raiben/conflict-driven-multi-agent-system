@@ -19,6 +19,8 @@ class ForgetfulStoryTeller(object):
         self.events_by_id = OrderedDict()
 
         self.places = []
+        self.places_index = {}
+        self.initial_positions = []
         self.characters = []
 
         self.character_names = {}
@@ -38,7 +40,9 @@ class ForgetfulStoryTeller(object):
             log = json.loads(log_content)
 
         size = log['META']['GRID_SIZE']
-        self.places = [f'{x}, {y}' for x, y in list(itertools.product(range(0, size), range(0, size)))]
+        self.places = log['PLACES']
+        self.places_index = {place: index for index, place in enumerate(self.places)}
+        self.initial_positions = log['INITIAL_POSITIONS']
 
         for character in log['CHARACTERS']:
             self.characters.append(character)
@@ -117,10 +121,18 @@ class ForgetfulStoryTeller(object):
 
     def describe_character(self, story_tropes, character_id):
         character_index = int(character_id[1:])
-        trope_id = story_tropes.character_tropes[character_index]
-        trope_name = uncamel(trope_id)
+        character_trope_id = story_tropes.character_tropes[character_index]
+        character_trope_name = uncamel(character_trope_id)
+
+        place_trope_index = self.places_index[self.initial_positions[character_id]]
+        place_trope_id = story_tropes.place_tropes[place_trope_index]
+        place_trope_name = uncamel(place_trope_id)
+
+        place = self.place_names[self.initial_positions[character_id]]
+
         sentence = self.story_introduction_sentence_picker.get_sentence(
-            protagonist=self.character_names[character_id], trope=trope_name)
+            protagonist=self.character_names[character_id], character_trope=character_trope_name, place=place,
+            place_trope=place_trope_name)
         return [sentence]
 
     def describe_event(self, story_tropes, event, character_id, elements_introduced, previous_event_time):
@@ -139,9 +151,14 @@ class ForgetfulStoryTeller(object):
     def describe_move(self, story_tropes, event, character_id, elements_introduced):
         trope_id = story_tropes.event_tropes[event.id]
         trope_name = uncamel(trope_id)
+
+        place_trope_index = self.places_index[event.places[1]]
+        place_trope_id = story_tropes.place_tropes[place_trope_index]
+        place_trope_name = uncamel(place_trope_id)
+
         sentence = self.move_event_sentence_picker.get_sentence(
             protagonist=self.character_names[character_id], trope=trope_name,
-            place=self.place_names[event.places[1]])
+            place=self.place_names[event.places[1]], place_trope=place_trope_name)
         return [sentence]
 
     def describe_confront(self, story_tropes, event, character_id, elements_introduced):

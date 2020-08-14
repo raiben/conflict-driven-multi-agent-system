@@ -6,7 +6,7 @@ class EventType(Enum):
     NOOP = 'noop'
     MOVE = 'move'
     CONFRONT = 'confront'
-    CHASE_RESOLUTION = 'chase_relution'
+    CHASE_RESOLUTION = 'chase_resolution'
     RESOLVE = 'resolve'
 
 

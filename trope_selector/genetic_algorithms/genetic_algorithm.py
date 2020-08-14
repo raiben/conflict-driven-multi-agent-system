@@ -8,21 +8,27 @@ from trope_selector.evaluators.neural_network_tropes_evaluator import NeuralNetw
 
 
 class GeneticAlgorithm(object):
-    def __init__(self, random, characters, global_events, character_events, character_tropes, move_tropes, confront_tropes,
-                 chase_resolution_tropes,resolve_tropes, neural_network_file, old_style_seed,
-                 use_global_tropes_rating=False, use_character_backstory_tropes_rating=True):
+    def __init__(self, random, characters, places, initial_positions, global_events, character_events,
+                 character_tropes, place_tropes, move_tropes, confront_tropes, chase_resolution_tropes,resolve_tropes,
+                 neural_network_file, old_style_seed, write=None, use_global_tropes_rating=False,
+                 use_character_backstory_tropes_rating=True):
 
         self.random = random
         self.characters = characters
+        self.places = places
+        self.places_index = {place:index for index,place in enumerate(self.places)}
+        self.initial_positions = initial_positions
         self.global_events = global_events
         self.character_events = character_events
         self.character_tropes = character_tropes
+        self.place_tropes = place_tropes
         self.move_tropes = move_tropes
         self.confront_tropes = confront_tropes
         self.chase_resolution_tropes = chase_resolution_tropes
         self.resolve_tropes = resolve_tropes
         self.neural_network_file = neural_network_file
         self.old_style_seed = old_style_seed
+        self.write = write
         self.use_global_tropes_rating = use_global_tropes_rating
         self.use_character_backstory_tropes_rating = use_character_backstory_tropes_rating
         self.evaluator = None
@@ -46,7 +52,7 @@ class GeneticAlgorithm(object):
         random.seed(self.old_style_seed)
         population = toolbox.population(n=300)
 
-        NGEN = 500
+        NGEN = 100
         for gen in range(NGEN):
             offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
             fits = toolbox.map(toolbox.evaluate, offspring)
@@ -54,7 +60,7 @@ class GeneticAlgorithm(object):
                 ind.fitness.values = fit
             population = toolbox.select(offspring, k=len(population))
             best = tools.selBest(population, k=1)[0]
-            print(f'Generation={gen}, fitness={best.fitness.values[0]}, tropes={list(best)}')
+            self.write(f'Generation={gen}, fitness={best.fitness.values[0]}, tropes={list(best)}')
 
         self.best = tools.selBest(population, k=1)[0]
         self.fitness = self.best.fitness.values[0]
@@ -66,6 +72,10 @@ class GeneticAlgorithm(object):
                 character_tropes = []
                 for character in self.characters:
                     character_tropes.append(self.random.choice(self.character_tropes))
+
+                place_tropes = []
+                for place in self.places:
+                    place_tropes.append(self.random.choice(self.place_tropes))
 
                 event_tropes = []
                 for event in self.global_events:
@@ -82,7 +92,7 @@ class GeneticAlgorithm(object):
                     index = self.random.choice(candidates) if candidates else None
                     event_tropes.append(index)
 
-                individual = creator(character_tropes + event_tropes)
+                individual = creator(character_tropes + place_tropes + event_tropes)
                 individuals.append(individual)
 
             return individuals
@@ -102,18 +112,21 @@ class GeneticAlgorithm(object):
             if self.use_character_backstory_tropes_rating:
                 ratings = []
                 for character in self.characters:
-                    trope_set = set()
-
+                    initial_place = self.initial_positions[character]
+                    initial_place_trope = self.get_trope_for_place(individual, initial_place)
+                    trope_set = set([initial_place_trope])
                     for event in self.character_events[character]:
                         if event.action != EventType.NOOP.value:
-                            event_trope = individual[event.id+len(self.characters)]
+                            event_trope = individual[event.id+len(self.characters)+len(self.places)]
                             trope_set.add(event_trope)
                             protagonist_trope = individual[int(event.protagonists[0].replace('c',''))]
                             trope_set.add(protagonist_trope)
                             if event.antagonists:
                                 antagonist_trope = individual[int(event.antagonists[0].replace('c', ''))]
                                 trope_set.add(antagonist_trope)
-
+                            if event.action == EventType.MOVE.value and character in event.protagonists:
+                                place_trope = self.get_trope_for_place(individual, event.places[1])
+                                trope_set.add(place_trope)
 
                     if None in trope_set:
                         trope_set.remove(None)
@@ -125,6 +138,9 @@ class GeneticAlgorithm(object):
 
         return evaluate
 
+    def get_trope_for_place(self, individual, place_name):
+        return individual[self.places_index[place_name] + len(self.characters)]
+
     def build_mutator(self):
         def mutator(individual, indpb):
             for i in range(len(individual)):
@@ -132,8 +148,10 @@ class GeneticAlgorithm(object):
                     candidates = []
                     if i<len(self.characters):
                         candidates = self.character_tropes
+                    elif i<len(self.places):
+                        candidates = self.place_tropes
                     else:
-                        events_index = i - len(self.characters)
+                        events_index = i - len(self.characters) - len(self.places)
                         action = self.global_events[events_index].action
                         if action == EventType.MOVE.value:
                             candidates = self.move_tropes
