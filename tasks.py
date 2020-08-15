@@ -5,7 +5,7 @@ from sys import stderr
 
 from invoke import task
 
-from representation.skeleton_representer import SkeletonRepresenter
+from representation.skeleton_representer import SkeletonPresenter
 from skeleton.world import World
 from scraper.tropes_resource_builder import TropesResourceBuilder
 from storyteller.forgetful_story_teller import ForgetfulStoryTeller
@@ -71,6 +71,6 @@ def make_up_best_story(context, world_resource, tropes_resource, neural_network_
     print(story)
 
 @task
-def present_skeleton(context, world_resource, output_file):
-    presenter = SkeletonRepresenter(world_resource, output_file)
+def present_skeleton(context, world_resource, output_prefix, solution_resource=None):
+    presenter = SkeletonPresenter(world_resource, output_prefix, solution_resource)
     presenter.present()
