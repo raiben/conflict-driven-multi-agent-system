@@ -9,6 +9,7 @@ from representation.skeleton_representer import SkeletonPresenter
 from skeleton.world import World
 from scraper.tropes_resource_builder import TropesResourceBuilder
 from storyteller.forgetful_story_teller import ForgetfulStoryTeller
+from trope_selector.evaluators.association_rules_evaluator_builder import AssociationRulesBuilder
 from trope_selector.trope_selector import TropeSelector
 
 
@@ -74,3 +75,9 @@ def make_up_best_story(context, world_resource, tropes_resource, neural_network_
 def present_skeleton(context, world_resource, output_prefix, solution_resource=None):
     presenter = SkeletonPresenter(world_resource, output_prefix, solution_resource)
     presenter.present()
+
+@task
+def build_association_rules(context, seed, extended_dataset_resource, output_prefix):
+    builder = AssociationRulesBuilder(extended_dataset_resource, output_prefix)
+    builder.prepare()
+    builder.build_rules()
