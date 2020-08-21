@@ -94,4 +94,5 @@ if __name__ == '__main__':
               'SilentSnarker', 'Squee', 'SwedishMedia', 'TheCameo', 'TheIngenue', 'ThemeMusicPowerUp', 'ThemeTuneCameo',
               'ThreeWaySex', 'TroubledProduction', 'VoxPops', 'WardrobeMalfunction', 'WhoWearsShortShorts'])
     evaluate(evaluator, ['AmericanFilms', 'InUniverse', 'ChekhovsGun'])
+    evaluate(evaluator, ['ShoutOut', 'OhCrap', 'ChekhovsGun'])
     

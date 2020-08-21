@@ -6,6 +6,7 @@ from sys import stderr
 from invoke import task
 
 from representation.skeleton_representer import SkeletonPresenter
+from scraper.characters_by_film_builder import CharactersByFilmBuilder
 from skeleton.world import World
 from scraper.tropes_resource_builder import TropesResourceBuilder
 from storyteller.forgetful_story_teller import ForgetfulStoryTeller
@@ -31,6 +32,15 @@ def build_tropes_resource(context, recursion_level=2, output_file=None):
     builder.retrieve_resource()
     builder.store_tree_as_json(output_file)
 
+@task
+def get_characters_by_film(context, extended_dataset_resource, output_file=None):
+    characters_by_film_builder = CharactersByFilmBuilder(extended_dataset_resource, output_file)
+    characters_by_film_builder.prepare()
+    characters_by_film_builder.run()
+    summaries = characters_by_film_builder.get_summaries()
+    print(f'Summary: {json.dumps(summaries, indent=2)}')
+
+    characters_by_film_builder.store()
 
 @task
 def make_up_random_story(context, world_resource, tropes_resource, seed=None, extended_dataset_resource=None):
